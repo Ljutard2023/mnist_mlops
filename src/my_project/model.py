@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+
 class MyAwesomeModel(nn.Module):
     """My awesome model."""
 
@@ -23,6 +24,7 @@ class MyAwesomeModel(nn.Module):
         x = torch.flatten(x, 1)
         x = self.dropout(x)
         return self.fc1(x)
+
 
 if __name__ == "__main__":
     model = MyAwesomeModel()

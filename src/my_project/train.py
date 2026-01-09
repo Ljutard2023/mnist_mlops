@@ -1,11 +1,13 @@
 import matplotlib.pyplot as plt
 import torch
 import typer
+
 # Note le point devant data et model pour l'import relatif
 from .data import corrupt_mnist
 from .model import MyAwesomeModel
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+
 
 def train(lr: float = 1e-3, batch_size: int = 32, epochs: int = 10) -> None:
     """Train a model on MNIST."""
@@ -21,7 +23,7 @@ def train(lr: float = 1e-3, batch_size: int = 32, epochs: int = 10) -> None:
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     statistics = {"train_loss": [], "train_accuracy": []}
-    
+
     for epoch in range(epochs):
         model.train()
         for i, (img, target) in enumerate(train_dataloader):
@@ -42,7 +44,7 @@ def train(lr: float = 1e-3, batch_size: int = 32, epochs: int = 10) -> None:
     print("Training complete")
     # On sauvegarde dans le dossier models/ à la racine
     torch.save(model.state_dict(), "models/model.pth")
-    
+
     # On sauvegarde les figures
     fig, axs = plt.subplots(1, 2, figsize=(15, 5))
     axs[0].plot(statistics["train_loss"])
@@ -50,6 +52,7 @@ def train(lr: float = 1e-3, batch_size: int = 32, epochs: int = 10) -> None:
     axs[1].plot(statistics["train_accuracy"])
     axs[1].set_title("Train accuracy")
     fig.savefig("reports/figures/training_statistics.png")
+
 
 if __name__ == "__main__":
     typer.run(train)
