@@ -29,6 +29,9 @@ def evaluate(model_checkpoint: str) -> None:
 
     print(f"Test accuracy: {correct / total:.2%}")
 
+def main():
+    """Fonction point d'entrée pour le script."""
+    typer.run(evaluate)
 
 if __name__ == "__main__":
     typer.run(evaluate)

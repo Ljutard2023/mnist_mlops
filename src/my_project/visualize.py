@@ -56,6 +56,9 @@ def visualize(model_checkpoint: str, figure_name: str = "embeddings.png") -> Non
     plt.savefig(output_path)
     print(f"✅ Visualization saved to {output_path}")
 
+def main():
+    """Fonction point d'entrée pour le script."""
+    typer.run(visualize)
 
 if __name__ == "__main__":
     typer.run(visualize)

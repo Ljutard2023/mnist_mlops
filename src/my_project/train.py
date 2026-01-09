@@ -6,13 +6,18 @@ import typer
 from .data import corrupt_mnist
 from .model import MyAwesomeModel
 
+app = typer.Typer(rich_markup_mode=None, context_settings={"help_option_names": ["-h", "--help"]})
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 
-
-def train(lr: float = 1e-3, batch_size: int = 32, epochs: int = 10) -> None:
-    """Train a model on MNIST."""
-    print("Training day and night")
-    print(f"{lr=}, {batch_size=}, {epochs=}")
+@app.command()
+def train(
+    lr: float = 1e-3, 
+    batch_size: int = 32, 
+    epochs: int = 5
+):
+    """Entraîne le modèle avec les hyperparamètres donnés."""
+    print(f"🚀 Training with: lr={lr}, batch_size={batch_size}, epochs={epochs}")
 
     model = MyAwesomeModel().to(DEVICE)
     train_set, _ = corrupt_mnist()
@@ -52,7 +57,8 @@ def train(lr: float = 1e-3, batch_size: int = 32, epochs: int = 10) -> None:
     axs[1].plot(statistics["train_accuracy"])
     axs[1].set_title("Train accuracy")
     fig.savefig("reports/figures/training_statistics.png")
-
+    
+    print("Training complete!")
 
 if __name__ == "__main__":
-    typer.run(train)
+    app()
