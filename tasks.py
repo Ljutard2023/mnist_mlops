@@ -61,3 +61,18 @@ def git(ctx, message="Update"):
     ctx.run("git add .")
     ctx.run(f'git commit -m "{message}"')
     ctx.run("git push")
+
+    
+@task(pre=[test], help={'message': 'The commit message'})  # <--- MODIFICATION ICI
+def git(ctx: Context, message="Update"):
+    """
+    Run tests, then add all files, commit with a message, and push.
+    """
+    # On ajoute un petit message pour l'utilisateur
+    print("🚀 Début du processus de déploiement (Tests -> Git)...")
+    
+    ctx.run("git add .")
+    ctx.run(f'git commit -m "{message}"')
+    ctx.run("git push")
+    
+    print("✅ Code testé, validé et envoyé !")
