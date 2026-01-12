@@ -1,78 +1,56 @@
 import os
+from invoke import task
 
-from invoke import Context, task
-
-WINDOWS = os.name == "nt"
-PROJECT_NAME = "my_project"
-PYTHON_VERSION = "3.12"
-
-
-# Project commands
-@task
-def preprocess_data(ctx: Context) -> None:
-    """Preprocess data."""
-    ctx.run(f"uv run src/{PROJECT_NAME}/data.py data/raw data/processed", echo=True, pty=not WINDOWS)
-
+# On récupère le dossier courant pour les volumes Docker (équivalent de $(pwd))
+CURRENT_DIR = os.getcwd()
 
 @task
-def train(ctx: Context) -> None:
-    """Train model."""
-    ctx.run(f"uv run src/{PROJECT_NAME}/train.py", echo=True, pty=not WINDOWS)
-
-
-@task
-def test(ctx: Context) -> None:
-    """Run tests."""
-    ctx.run("uv run coverage run -m pytest tests/", echo=True, pty=not WINDOWS)
-    ctx.run("uv run coverage report -m -i", echo=True, pty=not WINDOWS)
-
-
-@task
-def docker_build(ctx: Context, progress: str = "plain") -> None:
-    """Build docker images."""
-    ctx.run(
-        f"docker build -t train:latest . -f dockerfiles/train.dockerfile --progress={progress}",
-        echo=True,
-        pty=not WINDOWS,
-    )
-    ctx.run(
-        f"docker build -t api:latest . -f dockerfiles/api.dockerfile --progress={progress}", echo=True, pty=not WINDOWS
-    )
-
-
-# Documentation commands
-@task
-def build_docs(ctx: Context) -> None:
-    """Build documentation."""
-    ctx.run("uv run mkdocs build --config-file docs/mkdocs.yaml --site-dir build", echo=True, pty=not WINDOWS)
-
+def build_docker(ctx):
+    """
+    Construit les images Docker pour l'entraînement et l'évaluation.
+    """
+    print("🏗️  Construction de l'image d'entraînement (train:latest)...")
+    # Note: On précise bien le chemin 'dockerfiles/train.dockerfile'
+    ctx.run("docker build -f dockerfiles/train.dockerfile . -t train:latest")
+    
+    print("🏗️  Construction de l'image d'évaluation (evaluate:latest)...")
+    ctx.run("docker build -f dockerfiles/evaluate.dockerfile . -t evaluate:latest")
+    
+    print("✅ Toutes les images sont prêtes !")
 
 @task
-def serve_docs(ctx: Context) -> None:
-    """Serve documentation."""
-    ctx.run("uv run mkdocs serve --config-file docs/mkdocs.yaml", echo=True, pty=not WINDOWS)
+def train_docker(ctx):
+    """
+    Lance l'entraînement DANS le conteneur Docker (avec sauvegarde locale).
+    """
+    print("🚀 Lancement du conteneur d'entraînement...")
+    
+    # On monte les volumes pour récupérer le modèle et les rapports
+    # equivalent de : -v $(pwd)/models:/app/models
+    volumes = f"-v {CURRENT_DIR}/models:/app/models -v {CURRENT_DIR}/reports:/app/reports"
+    
+    ctx.run(f"docker run --rm {volumes} train:latest")
 
+@task
+def evaluate_docker(ctx, model_path="models/model.pth"):
+    """
+    Lance l'évaluation DANS le conteneur Docker.
+    """
+    print(f"📊 Évaluation du modèle : {model_path}")
+    
+    # On a besoin d'accéder au dossier models
+    volumes = f"-v {CURRENT_DIR}/models:/app/models"
+    
+    # On passe le chemin du modèle en argument au conteneur
+    ctx.run(f"docker run --rm {volumes} evaluate:latest {model_path}")
 
-@task(help={'message': 'The commit message'})
+# --- Tes anciennes tâches (Git, etc.) peuvent rester ici ---
+@task
+def test(ctx):
+    ctx.run("uv run pytest tests/")
+
+@task(pre=[test], help={'message': 'Message du commit'})
 def git(ctx, message="Update"):
-    """
-    Add all files, commit with a message, and push.
-    """
     ctx.run("git add .")
     ctx.run(f'git commit -m "{message}"')
     ctx.run("git push")
-
-    
-@task(pre=[test], help={'message': 'The commit message'})  # <--- MODIFICATION ICI
-def git(ctx: Context, message="Update"):
-    """
-    Run tests, then add all files, commit with a message, and push.
-    """
-    # On ajoute un petit message pour l'utilisateur
-    print("🚀 Début du processus de déploiement (Tests -> Git)...")
-    
-    ctx.run("git add .")
-    ctx.run(f'git commit -m "{message}"')
-    ctx.run("git push")
-    
-    print("✅ Code testé, validé et envoyé !")
